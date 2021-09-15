@@ -1,26 +1,40 @@
 require 'rails_helper'
-require 'byebug'
 
 RSpec.describe 'Posts', type: :request do
   describe 'GET /posts' do
-    before { get '/posts' }
-
     it 'should return Ok' do
+      get '/posts'
+
       payload = JSON.parse(response.body)
       expect(payload).to be_empty
       expect(response).to have_http_status(200)
     end
 
-    describe 'with data in DB' do
-      let!(:posts) { create_list(:post, 10, published: true) }
+    describe 'search' do
+      let!(:post1) { create(:published_post, title: 'Hola mundo') }
+      let!(:post2) { create(:published_post, title: 'Hola rails') }
+      let!(:post3) { create(:published_post, title: 'Curso rails') }
+      it 'should return filtered posts by title' do
+        get "/posts?search=Hola"
 
-      it 'should return all published Posts' do
-        get '/posts'
         payload = JSON.parse(response.body)
-
-        expect(payload.size).to eq(posts.size)
+        expect(payload).to_not be_empty
+        expect(payload.size).to eq(2)
+        expect(payload.map { |p| p['id'] }.sort).to eq([post1.id, post2.id])
         expect(response).to have_http_status(200)
       end
+    end
+  end
+
+  describe 'with data in DB' do
+    let!(:posts) { create_list(:post, 10, published: true) }
+
+    it 'should return all published Posts' do
+      get '/posts'
+      payload = JSON.parse(response.body)
+
+      expect(payload.size).to eq(posts.size)
+      expect(response).to have_http_status(200)
     end
   end
 
